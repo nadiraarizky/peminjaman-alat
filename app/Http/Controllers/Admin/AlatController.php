@@ -3,83 +3,91 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Alat; 
+use App\Models\Kategori; 
+use App\Models\ActivityLog; // Tambahkan ini agar bisa mencatat log
 use Illuminate\Http\Request;
-use App\Models\Alat;
 
 class AlatController extends Controller
 {
-    // Tampil semua alat
     public function index()
     {
-        $alats = Alat::all();
+        $alats = Alat::with('kategori')->get();
         return view('admin.alats.index', compact('alats'));
     }
 
-    // Form tambah alat
     public function create()
     {
-        return view('admin.alats.create');
+        $kategoris = Kategori::all();
+        return view('admin.alats.create', compact('kategoris'));
     }
 
-    // Simpan alat baru
-  public function store(Request $request)
-{
-    $request->validate([
-        'nama_alat' => 'required|string|max:255',
-        'kode_alat' => 'required|string|unique:alats,kode_alat',
-        'kondisi' => 'nullable|string|max:100',
-        'jumlah' => 'required|integer|min:0',
-    ]);
-
-    Alat::create($request->only([
-        'nama_alat',
-        'kode_alat',
-        'kondisi',
-        'jumlah'
-    ]));
-
-    return redirect()
-        ->route('alats.index')
-        ->with('success', 'Alat berhasil ditambahkan.');
-}
-
-    // Tampil detail alat (optional)
-    public function show($id)
+    public function store(Request $request)
     {
-        $alat = Alat::findOrFail($id);
-        return view('admin.alats.show', compact('alat'));
+        $request->validate([
+            'kode_alat'   => 'required|unique:alats,kode_alat',
+            'nama_alat'   => 'required',
+            'kategori_id' => 'required',
+            'kondisi'     => 'required',
+            'jumlah'      => 'required|numeric',
+        ]);
+
+        $alat = Alat::create($request->all());
+
+        // --- CATAT LOG AKTIVITAS ---
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'activity' => 'Tambah Alat',
+            'description' => auth()->user()->name . ' menambahkan alat baru: ' . $alat->nama_alat . ' (' . $alat->kode_alat . ')'
+        ]);
+
+        return redirect()->route('admin.alats.index')->with('success', 'Data alat berhasil ditambahkan!');
     }
 
-    // Form edit alat
     public function edit($id)
     {
-        $alat = Alat::findOrFail($id);
-        return view('admin.alats.edit', compact('alat'));
+        $alat = Alat::findOrFail($id); 
+        $kategoris = Kategori::all(); 
+        return view('admin.alats.edit', compact('alat', 'kategoris'));
     }
 
-    // Update alat
     public function update(Request $request, $id)
     {
         $alat = Alat::findOrFail($id);
 
         $request->validate([
-            'nama_alat' => 'required|string|max:255',
-            'kode_alat' => 'required|string|unique:alats,kode_alat,'.$alat->id,
-            'kondisi' => 'nullable|string|max:100',
-            'jumlah' => 'required|integer|min:0',
+            'kode_alat'   => 'required|unique:alats,kode_alat,' . $id,
+            'nama_alat'   => 'required',
+            'kategori_id' => 'required',
+            'kondisi'     => 'required',
+            'jumlah'      => 'required|numeric',
         ]);
 
         $alat->update($request->all());
 
-        return redirect()->route('alats.index')->with('success', 'Alat berhasil diupdate.');
+        // --- CATAT LOG AKTIVITAS ---
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'activity' => 'Update Alat',
+            'description' => auth()->user()->name . ' memperbarui data alat: ' . $alat->nama_alat
+        ]);
+
+        return redirect()->route('admin.alats.index')->with('success', 'Data alat berhasil diperbarui!');
     }
 
-    // Hapus alat
     public function destroy($id)
     {
         $alat = Alat::findOrFail($id);
+
+        // --- CATAT LOG AKTIVITAS (Sebelum Dihapus) ---
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'activity' => 'Hapus Alat',
+            'description' => auth()->user()->name . ' menghapus alat: ' . $alat->nama_alat
+        ]);
+
         $alat->delete();
 
-        return redirect()->route('alats.index')->with('success', 'Alat berhasil dihapus.');
+        return redirect()->route('admin.alats.index')->with('success', 'Data alat berhasil dihapus!');
     }
 }

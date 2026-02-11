@@ -1,100 +1,84 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
-                </div>
+<div style="width: 260px; background-color: white; min-height: 100vh; font-family: 'Poppins', sans-serif; box-shadow: 2px 0 10px rgba(0,0,0,0.05); position: fixed; left: 0; top: 0; z-index: 1000;">
+    
+    <div style="background-color: #6d28d9; padding: 25px 20px; margin-bottom: 10px;">
+        <h2 style="color: white; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 1px;">
+            Sarpras App
+        </h2>
+    </div>
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                </div>
-            </div>
+    <ul style="list-style: none; padding: 0 15px;">
+        @php $role = auth()->user()->role; @endphp
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+        <p style="color: #ec4899; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin: 25px 0 10px 15px;">CORE</p>
+        
+        <li style="margin-bottom: 5px;">
+            <a href="{{ $role === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
+               style="display: flex; align-items: center; padding: 12px 15px; border-radius: 12px; color: #4b5563; text-decoration: none; font-weight: 600; transition: 0.3s;"
+               onmouseover="this.style.backgroundColor='#f3e8ff'; this.style.color='#6d28d9'" 
+               onmouseout="this.style.backgroundColor='transparent'; this.style.color='#4b5563'">
+                <span style="margin-right: 12px; font-size: 18px;">📊</span> Dashboard
+            </a>
+        </li>
 
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
+        <p style="color: #ec4899; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin: 25px 0 10px 15px;">MENU UTAMA</p>
 
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
+        @if($role === 'admin')
+            <li><a href="{{ route('admin.alats.index') }}" class="sidebar-link-custom">🛠 Data Alat</a></li>
+            <li><a href="{{ route('admin.kategori.index') }}" class="sidebar-link-custom">📂 Kategori</a></li>
+            <li><a href="{{ route('admin.peminjamans.index') }}" class="sidebar-link-custom">📋 Data Peminjaman</a></li>
+        @else
+            <li><a href="{{ route('user.alats.index') }}" class="sidebar-link-custom">📦 Katalog Alat</a></li>
+            <li><a href="{{ route('user.pinjam.index') }}" class="sidebar-link-custom">🔄 Pinjaman Saya</a></li>
+            <li><a href="{{ route('user.pinjam.history') }}" class="sidebar-link-custom">🕒 Riwayat Saya</a></li>
+        @endif
 
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
+        <p style="color: #ec4899; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin: 25px 0 10px 15px;">PENGATURAN</p>
+        
+        <li style="margin-bottom: 5px;">
+            <a href="{{ route('profile.edit') }}" class="sidebar-link-custom">
+                <span style="margin-right: 12px; font-size: 18px;">👤</span> Profil Saya
+            </a>
+        </li>
 
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+        <li style="margin-top: 30px; padding: 0 10px;">
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" style="width: 100%; background: #fff1f2; color: #e11d48; border: none; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;"
+                        onmouseover="this.style.backgroundColor='#fee2e2'" 
+                        onmouseout="this.style.backgroundColor='#fff1f2'">
+                    🚪 LOGOUT
                 </button>
-            </div>
-        </div>
+            </form>
+        </li>
+    </ul>
+
+    <div style="position: absolute; bottom: 20px; left: 15px; right: 15px; padding: 15px; background: #f9fafb; border-radius: 15px; border: 1px solid #f3f4f6;">
+        <span style="display: block; font-size: 10px; color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Login Sebagai:</span>
+        <span style="display: block; font-size: 14px; color: #6d28d9; font-weight: 800; text-transform: uppercase;">{{ auth()->user()->name }}</span>
     </div>
+</div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
-        </div>
-    </div>
-</nav>
+<style>
+    /* Tambahan agar konten utama tidak tertutup sidebar */
+    #main-content, main { 
+        margin-left: 260px; 
+        transition: 0.3s;
+    }
+    
+    .sidebar-link-custom {
+        display: flex; 
+        align-items: center; 
+        padding: 12px 15px; 
+        border-radius: 12px; 
+        color: #4b5563; 
+        text-decoration: none; 
+        font-weight: 600; 
+        transition: 0.3s;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    .sidebar-link-custom:hover {
+        background-color: #f3e8ff; 
+        color: #6d28d9;
+    }
+</style>

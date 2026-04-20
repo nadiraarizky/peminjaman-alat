@@ -13,15 +13,10 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 15px;">
-            {{ session('success') }}
-        </div>
-    @endif
-
+    {{-- Alert Error manual tetap ada untuk validasi form jika diperlukan --}}
     @if(session('error'))
         <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 15px;">
-            {{ session('error') }}
+            <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
         </div>
     @endif
 
@@ -52,30 +47,59 @@
                                 <td class="px-4 py-3 align-middle fw-semibold text-secondary">
                                     {{ $item->alat->nama_alat }}
                                 </td>
-                                <td class="px-4 py-3 align-middle text-center fw-bold text-purple" style="color: #6f42c1;">
+                                <td class="px-4 py-3 align-middle text-center fw-bold" style="color: #6f42c1;">
                                     {{ $item->jumlah_pinjam }}
                                 </td>
                                 <td class="px-4 py-3 align-middle text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <form action="{{ route('admin.peminjamans.approve', $item->id) }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <button type="submit" class="btn btn-success btn-sm px-3 rounded-pill fw-bold shadow-sm">
-                                                Setujui
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-success btn-sm px-3 rounded-pill fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalApprove{{ $item->id }}">
+                                            Setujui
+                                        </button>
 
-                                        <form action="{{ route('admin.peminjamans.reject', $item->id) }}" method="POST">
+                                        <form action="{{ route('admin.peminjamans.reject', $item->id) }}" method="POST" id="form-reject-{{ $item->id }}">
                                             @csrf @method('PATCH')
-                                            <button type="submit" class="btn btn-danger btn-sm px-3 rounded-pill fw-bold shadow-sm">
+                                            <button type="button" class="btn btn-danger btn-sm px-3 rounded-pill fw-bold shadow-sm" onclick="confirmReject({{ $item->id }})">
                                                 Tolak
                                             </button>
                                         </form>
                                     </div>
                                 </td>
                             </tr>
+
+                            <div class="modal fade" id="modalApprove{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content" style="border-radius: 20px; border: none;">
+                                        <form action="{{ route('admin.peminjamans.approve', $item->id) }}" method="POST">
+                                            @csrf @method('PATCH')
+                                            <div class="modal-header border-0 pt-4 px-4">
+                                                <h5 class="modal-title fw-bold" style="color: #6f42c1;">Konfirmasi Persetujuan</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body px-4">
+                                                <p class="text-muted small">Tentukan batas waktu pengembalian alat untuk <strong>{{ $item->user->name }}</strong>.</p>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold text-uppercase text-secondary">Tanggal Kembali</label>
+                                                    <input type="date" name="tanggal_kembali" class="form-control shadow-sm" style="border-radius: 10px;" required min="{{ date('Y-m-d') }}">
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold text-uppercase text-secondary">Jam Pengumpulan</label>
+                                                    <input type="time" name="jam_kembali" class="form-control shadow-sm" style="border-radius: 10px;" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-0 pb-4 px-4">
+                                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Setujui Sekarang</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-4 py-5 text-center text-muted italic">
+                                <td colspan="4" class="px-4 py-5 text-center text-muted">
+                                    <i class="fas fa-clipboard-check d-block mb-2 fa-2x"></i>
                                     Tidak ada pengajuan baru yang menunggu.
                                 </td>
                             </tr>
@@ -86,4 +110,41 @@
         </div>
     </div>
 </div>
+
+{{-- SCRIPT AREA --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pop-up sukses dengan tombol "Oke"
+        @if(session('success'))
+            Swal.fire({
+                title: 'Berhasil!',
+                // Menghilangkan &amp; secara otomatis jika masih terbawa dari controller
+                text: "{!! str_replace('&amp;', '&', session('success')) !!}",
+                icon: 'success',
+                confirmButtonColor: '#6f42c1',
+                confirmButtonText: 'Oke',
+                allowOutsideClick: false
+            });
+        @endif
+    });
+
+    // Fungsi tambahan untuk konfirmasi Tolak
+    function confirmReject(id) {
+        Swal.fire({
+            title: 'Tolak Pinjaman?',
+            text: "Permintaan ini akan langsung dibatalkan.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Tolak!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('form-reject-' + id).submit();
+            }
+        });
+    }
+</script>
 @endsection

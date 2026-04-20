@@ -9,10 +9,15 @@
     </ol>
 
     <div class="row">
+        {{-- Kotak Ungu: Pinjaman Saya --}}
         <div class="col-xl-3 col-md-6">
-            {{-- Kotak Ungu: Meniru Gaya Admin --}}
             <div class="card text-white mb-4" style="background-color: #6f42c1; border: none;">
-                <div class="card-body">Pinjaman Saya</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>Pinjaman Saya</div>
+                        <h3 class="mb-0">{{ $jumlahPinjaman }}</h3>
+                    </div>
+                </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
                     <a class="small text-white stretched-link" href="{{ route('user.pinjam.index') }}">Lihat Detail</a>
                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
@@ -20,10 +25,15 @@
             </div>
         </div>
 
+        {{-- Kotak Pink: Total Denda --}}
         <div class="col-xl-3 col-md-6">
-            {{-- Kotak Pink: Meniru Gaya Admin --}}
             <div class="card text-white mb-4" style="background-color: #d63384; border: none;">
-                <div class="card-body">Total Denda</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>Total Denda</div>
+                        <h4 class="mb-0">Rp {{ number_format($totalDenda, 0, ',', '.') }}</h4>
+                    </div>
+                </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
                     <a class="small text-white stretched-link" href="{{ route('user.pinjam.history') }}">Lihat Riwayat</a>
                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>

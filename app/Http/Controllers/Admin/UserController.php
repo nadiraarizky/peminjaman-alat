@@ -4,27 +4,36 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\ActivityLog; // Tambahkan ini
+use App\Models\ActivityLog; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    // Menampilkan daftar semua user 
+    // 1. Menampilkan daftar semua user
     public function index()
     {
-        $users = User::all();
+        // Mengambil user terbaru agar yang baru daftar muncul di atas
+        $users = User::latest()->get(); 
         return view('admin.users.index', compact('users'));
     }
 
-    // Menyimpan user baru
+    // 2. Fungsi BARU: Menampilkan detail user via JSON (untuk Modal)
+    // Jika kamu ingin detailnya lebih canggih, fungsi ini bisa dipakai
+    public function show($id)
+    {
+        $user = User::findOrFail($id);
+        return response()->json($user);
+    }
+
+    // 3. Menyimpan user baru
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,petugas,user',
+            'role' => 'required|in:admin,petugas,user', // Sesuaikan dengan enum di DB
         ]);
 
         $user = User::create([
@@ -34,24 +43,24 @@ class UserController extends Controller
             'role' => $request->role,
         ]);
 
-        // --- CATAT LOG ---
+        // Catat Log
         ActivityLog::create([
             'user_id' => auth()->id(),
             'activity' => 'Tambah User',
-            'description' => auth()->user()->name . ' menambah user baru: ' . $user->name . ' (' . $user->role . ')'
+            'description' => auth()->user()->name . ' menambah user baru: ' . $user->name . ' sebagai ' . $user->role
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User berhasil ditambahkan!');
     }
 
-    // Menampilkan halaman edit user
+    // 4. Menampilkan halaman edit
     public function edit($id)
     {
         $user = User::findOrFail($id);
         return view('admin.users.edit', compact('user'));
     }
 
-    // Mengupdate data user
+    // 5. Mengupdate data user
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -60,7 +69,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
             'role' => 'required|in:admin,petugas,user',
-            'password' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:8', // Password opsional saat edit
         ]);
 
         $user->name = $request->name;
@@ -73,7 +82,6 @@ class UserController extends Controller
 
         $user->save();
 
-        // --- CATAT LOG ---
         ActivityLog::create([
             'user_id' => auth()->id(),
             'activity' => 'Update User',
@@ -83,16 +91,16 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Data user berhasil diperbarui!');
     }
 
-    // Menghapus data user 
+    // 6. Menghapus data user 
     public function destroy($id)
     {
         $user = User::findOrFail($id);
         
+        // Proteksi agar tidak menghapus diri sendiri
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun sendiri!');
         }
 
-        // --- CATAT LOG (Sebelum Dihapus) ---
         ActivityLog::create([
             'user_id' => auth()->id(),
             'activity' => 'Hapus User',

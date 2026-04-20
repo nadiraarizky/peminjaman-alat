@@ -7,74 +7,96 @@ use App\Models\Alat;
 use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class PeminjamanController extends Controller
 {
-    // Halaman daftar pinjaman saya (yang masih pending atau sedang dipinjam)
+    /**
+     * Menampilkan daftar pinjaman (Pending & Dipinjam)
+     */
     public function index()
     {
+        // Pastikan relasi 'alat' ada di Model Peminjaman
         $peminjamans = Peminjaman::with('alat')
             ->where('user_id', Auth::id())
-            ->whereIn('status', ['pending', 'dipinjam']) // Sesuaikan dengan ENUM database kamu
+            ->whereIn('status', ['pending', 'dipinjam'])
             ->latest()
             ->get();
+        
         return view('user.peminjamans.index', compact('peminjamans'));
     }
 
-    // Menampilkan Form Pinjam
-    public function create(Request $request)
-    {
-        $alat = Alat::findOrFail($request->alat_id);
-        return view('user.peminjamans.create', compact('alat'));
-    }
-
-    // Proses menyimpan data pinjaman
+    /**
+     * Simpan Pinjaman - PERBAIKAN SINKRONISASI INPUT
+     */
     public function store(Request $request)
     {
+        // PERBAIKAN: Nama field disamakan dengan <input name="..."> di View
         $request->validate([
             'alat_id' => 'required|exists:alats,id',
-            'jumlah' => 'required|integer|min:1',
+            'jumlah_pinjam' => 'required|integer|min:1', 
         ]);
 
-        Peminjaman::create([
-            'user_id'        => Auth::id(),
-            'alat_id'        => $request->alat_id,
-            'jumlah_pinjam'  => $request->jumlah,
-            'tanggal_pinjam' => now(), 
-            'status'         => 'pending',
+        // Simpan data peminjaman
+        $peminjaman = Peminjaman::create([
+            'user_id'         => Auth::id(),
+            'alat_id'         => $request->alat_id,
+            'jumlah_pinjam'   => $request->jumlah_pinjam, // Sesuai input form
+            'tanggal_pinjam'  => now(), 
+            'status'          => 'pending',
+            'tanggal_kembali' => now()->addDays(3), // Default kasih 3 hari atau sesuai kebijakan
         ]);
 
-        return redirect()->route('user.pinjam.index')->with('success', 'Permintaan peminjaman berhasil dikirim!');
+        $alat = Alat::find($request->alat_id);
+
+        // Redirect kembali ke halaman index peminjaman
+        return redirect()->route('user.pinjam.index')
+            ->with('status_sukses', "Permintaan pinjam " . $alat->nama_alat . " berhasil dikirim! Menunggu persetujuan admin.");
     }
 
-    // --- FUNGSI BARU: Proses Pengembalian Alat ---
+    /**
+     * Fitur Kembalikan Alat
+     */
     public function returnBack($id)
     {
-        // Cari data pinjaman milik user ini yang statusnya 'dipinjam'
         $pinjam = Peminjaman::where('id', $id)
             ->where('user_id', Auth::id())
             ->where('status', 'dipinjam')
             ->firstOrFail();
 
-        // 1. Tambahkan kembali stok ke tabel alats
-        $pinjam->alat->increment('jumlah', $pinjam->jumlah_pinjam);
+        $tgl_sekarang = Carbon::now();
+        $tgl_deadline = Carbon::parse($pinjam->tanggal_kembali);
+        $total_denda = 0;
+
+        // Hitung Denda
+        if ($tgl_sekarang->gt($tgl_deadline)) {
+            $selisih_hari = $tgl_sekarang->diffInDays($tgl_deadline);
+            if($selisih_hari <= 0) $selisih_hari = 1;
+            $total_denda = $selisih_hari * 5000; 
+        }
+
+        // Kembalikan stok alat
+        if ($pinjam->alat) {
+            $pinjam->alat->increment('jumlah', $pinjam->jumlah_pinjam);
+        }
         
-        // 2. Ubah status menjadi 'dikembalikan'
         $pinjam->update([
-            'status' => 'dikembalikan'
+            'status' => 'dikembalikan',
+            'denda'  => $total_denda,
+            'tanggal_pengembalian' => $tgl_sekarang 
         ]);
 
-        return back()->with('success', 'Alat telah dikembalikan, terima kasih!');
+        return back()->with('status_sukses', 'Alat telah dikembalikan.' . ($total_denda > 0 ? ' Denda: Rp '.number_format($total_denda,0,',','.') : ''));
     }
 
-    // Halaman riwayat (untuk yang sudah ditolak atau dikembalikan)
     public function history()
     {
         $peminjamans = Peminjaman::with('alat')
             ->where('user_id', Auth::id())
-            ->whereIn('status', ['dikembalikan', 'ditolak']) // Sesuaikan dengan ENUM database
+            ->whereIn('status', ['dikembalikan', 'ditolak'])
             ->latest()
             ->get();
+            
         return view('user.peminjamans.history', compact('peminjamans'));
     }
 }

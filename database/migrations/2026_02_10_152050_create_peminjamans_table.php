@@ -13,17 +13,22 @@ return new class extends Migration
     {
         Schema::create('peminjamans', function (Blueprint $table) {
             $table->id();
-            // Menghubungkan ke ID User (siapa yang pinjam)
+            // Relasi User & Alat
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            // Menghubungkan ke ID Alat (barang apa yang dipinjam)
             $table->foreignId('alat_id')->constrained('alats')->onDelete('cascade');
             
             $table->integer('jumlah_pinjam');
-            $table->date('tanggal_pinjam');
-            $table->date('tanggal_kembali')->nullable(); // Boleh kosong kalau belum dibalikin
             
-            // Status untuk memantau apakah barang sudah balik atau belum
-            $table->enum('status', ['dipinjam', 'dikembalikan'])->default('dipinjam');
+            // PAKAI dateTime: Agar jam tidak 00:00 terus
+            $table->dateTime('tanggal_pinjam');
+            $table->dateTime('tanggal_kembali')->nullable(); 
+            
+            // PERBAIKAN: Tambahkan 'ditolak' ke dalam array enum
+            $table->enum('status', ['pending', 'dipinjam', 'dikembalikan', 'ditolak'])->default('pending');
+            
+            // KOLOM DENDA: Tetap simpan di sini
+            $table->decimal('denda', 12, 2)->default(0); 
+            
             $table->timestamps();
         });
     }

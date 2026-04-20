@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Http\Controllers\ProfileController;
 
 // Import Admin Controllers
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -24,12 +23,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// ================= HOME (Redirect by Role) =================
+// ================= HOME REDIRECT =================
 Route::get('/home', function () {
     $user = auth()->user();
     if ($user->role === 'admin') {
         return redirect()->route('admin.dashboard');
-    } elseif ($user->role === 'user') {
+    } elseif ($user->role === 'petugas') {
+        return redirect()->route('petugas.dashboard');
+    } elseif ($user->role === 'user' || $user->role === 'peminjam') {
         return redirect()->route('user.dashboard');
     }
     return redirect('/');
@@ -41,7 +42,6 @@ Route::prefix('admin')
     ->middleware(['auth']) 
     ->group(function () {
         
-        // Dashboard Admin
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         // CRUD Alat
@@ -72,20 +72,43 @@ Route::prefix('admin')
             Route::delete('/{id}', [UserController::class, 'destroy'])->name('destroy');
         });
 
-        // LOG AKTIVITAS (SUDAH DIPERBAIKI)
+        // LOG AKTIVITAS
         Route::prefix('logs')->name('logs.')->group(function () {
             Route::get('/', [LogController::class, 'index'])->name('index');
             Route::get('/export-pdf', [LogController::class, 'exportPDF'])->name('exportPDF');
             Route::delete('/destroy-all', [LogController::class, 'destroyAll'])->name('destroyAll');
         });
 
-        // MANAJEMEN DATA PEMINJAMAN (Persetujuan & Riwayat)
+        // MANAJEMEN DATA PEMINJAMAN
         Route::prefix('peminjamans')->name('peminjamans.')->group(function () {
             Route::get('/', [AdminPeminjamanController::class, 'index'])->name('index');
-            Route::patch('/{id}/setujui', [AdminPeminjamanController::class, 'approve'])->name('approve');
-            Route::patch('/{id}/tolak', [AdminPeminjamanController::class, 'reject'])->name('reject');
+            Route::patch('/{id}/setujui', [PeminjamanManagementController::class, 'approve'])->name('approve');
+            Route::patch('/{id}/tolak', [PeminjamanManagementController::class, 'reject'])->name('reject');
+            Route::patch('/{id}/kembalikan', [PeminjamanManagementController::class, 'returnBarang'])->name('returnBarang');
             Route::get('/history', [AdminPeminjamanController::class, 'history'])->name('history');
-            Route::get('/export-pdf', [PeminjamanManagementController::class, 'exportPDF'])->name('exportPDF');
+            Route::get('/export-pdf', [AdminPeminjamanController::class, 'exportPDF'])->name('exportPDF');
+            Route::post('/{id}/pay-denda', [AdminPeminjamanController::class, 'payDenda'])->name('payDenda');
+        });
+
+        Route::prefix('pengembalians')->name('pengembalians.')->group(function () {
+            Route::get('/', [PeminjamanManagementController::class, 'indexPengembalian'])->name('index');
+            Route::delete('/{id}', [PeminjamanManagementController::class, 'destroyPengembalian'])->name('destroy');
+        });
+    });
+
+// ================= PETUGAS AREA =================
+Route::prefix('petugas')
+    ->name('petugas.')
+    ->middleware(['auth']) 
+    ->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::prefix('peminjamans')->name('peminjamans.')->group(function () {
+            Route::get('/', [AdminPeminjamanController::class, 'index'])->name('index'); 
+            Route::patch('/{id}/setujui', [PeminjamanManagementController::class, 'approve'])->name('approve');
+            Route::patch('/{id}/tolak', [PeminjamanManagementController::class, 'reject'])->name('reject');
+            Route::patch('/{id}/kembalikan', [PeminjamanManagementController::class, 'returnBarang'])->name('returnBarang');
+            Route::get('/history', [AdminPeminjamanController::class, 'history'])->name('history');
+            Route::get('/export-pdf', [AdminPeminjamanController::class, 'exportPDF'])->name('exportPDF');
         });
     });
 
@@ -97,21 +120,16 @@ Route::prefix('user')
         Route::get('/', [UserDashboardController::class, 'index'])->name('dashboard');
         Route::get('/alats', [UserAlatController::class, 'index'])->name('alats.index');
 
-        // PROSES PINJAM & RIWAYAT
         Route::prefix('pinjam')->name('pinjam.')->group(function () {
             Route::get('/create', [UserPeminjamanController::class, 'create'])->name('create');
             Route::post('/store', [UserPeminjamanController::class, 'store'])->name('store');
             Route::get('/index', [UserPeminjamanController::class, 'index'])->name('index');
             Route::get('/history', [UserPeminjamanController::class, 'history'])->name('history');
-            Route::patch('/{id}/return', [UserPeminjamanController::class, 'returnBack'])->name('return');
+            
+            // PERBAIKAN DI SINI: Ganti nama 'kembalikan' menjadi 'return' 
+            // agar sesuai dengan route('user.pinjam.return') di Blade Anda.
+            Route::patch('/{id}/kembalikan', [UserPeminjamanController::class, 'returnBack'])->name('return');
         });
     });
-
-// ================= PROFILE & AUTH =================
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
 require __DIR__.'/auth.php';

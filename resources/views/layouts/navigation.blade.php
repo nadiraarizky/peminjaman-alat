@@ -24,7 +24,7 @@
 
         @if($role === 'admin')
             <li><a href="{{ route('admin.alats.index') }}" class="sidebar-link-custom">🛠 Data Alat</a></li>
-            <li><a href="{{ route('admin.kategori.index') }}" class="sidebar-link-custom">📂 Kategori</a></li>
+            <li><a href="{{ route('admin.kategoris.index') }}" class="sidebar-link-custom">📂 Kategori</a></li>
             <li><a href="{{ route('admin.peminjamans.index') }}" class="sidebar-link-custom">📋 Data Peminjaman</a></li>
         @else
             <li><a href="{{ route('user.alats.index') }}" class="sidebar-link-custom">📦 Katalog Alat</a></li>
@@ -34,13 +34,7 @@
 
         <p style="color: #ec4899; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin: 25px 0 10px 15px;">PENGATURAN</p>
         
-        <li style="margin-bottom: 5px;">
-            <a href="{{ route('profile.edit') }}" class="sidebar-link-custom">
-                <span style="margin-right: 12px; font-size: 18px;">👤</span> Profil Saya
-            </a>
-        </li>
-
-        <li style="margin-top: 30px; padding: 0 10px;">
+        <li style="margin-top: 10px; padding: 0 10px;">
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="width: 100%; background: #fff1f2; color: #e11d48; border: none; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;"
@@ -59,7 +53,14 @@
 </div>
 
 <style>
-    /* Tambahan agar konten utama tidak tertutup sidebar */
+    /* CSS UNTUK MENGHAPUS SETTINGS DI DROPDOWN ATAS (ADMIN & USER) */
+    .dropdown-menu a[href*="profile"], 
+    x-dropdown-link[href*="profile"],
+    .topbar a[href*="profile"],
+    [style*="profile"] {
+        display: none !important;
+    }
+
     #main-content, main { 
         margin-left: 260px; 
         transition: 0.3s;
